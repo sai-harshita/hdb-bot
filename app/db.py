@@ -15,7 +15,8 @@ DATABASE_URL = f"postgresql+psycopg2://{USER}:{PWD}@{HOST}:{PORT}/{DB}"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Prefer PBKDF2 for this POC to avoid bcrypt backend issues on newer Python images.
+pwd_ctx = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
 class User(Base):

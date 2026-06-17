@@ -93,6 +93,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend:/usr/share/nginx/html:ro
     depends_on: [chatbot-api, mcp-server, grafana]
     ports:
       - "80:80"

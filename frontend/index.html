@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HDB Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <aside class="info-panel">
+        <div class="brand-mark">HDB</div>
+        <p class="eyebrow">Singapore public-housing assistant</p>
+        <h1>Guardrailed answers over official HDB sources.</h1>
+        <p class="lead">
+          Local RAG, NeMo Guardrails, JWT auth, MCP tools, OpenTelemetry, Qdrant, Postgres, and NGINX.
+        </p>
+        <div class="badges">
+          <span>NeMo Guardrails</span>
+          <span>Qdrant</span>
+          <span>FastAPI</span>
+          <span>MCP</span>
+          <span>Grafana</span>
+        </div>
+        <div class="topic-card">
+          <div class="topic-card-header">
+            <h2>Supported topics</h2>
+            <button id="refreshTopics" type="button">Refresh</button>
+          </div>
+          <ul id="topicsList" class="topics-list"></ul>
+        </div>
+        <div class="ops-links">
+          <a href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+          <a href="/grafana/" target="_blank" rel="noreferrer">Grafana</a>
+          <a href="/mcp/sse" target="_blank" rel="noreferrer">MCP Endpoint</a>
+        </div>
+      </aside>
+
+      <main class="chat-panel">
+        <section class="session-strip">
+          <div>
+            <p class="eyebrow">Live session</p>
+            <h2>Operator Console</h2>
+          </div>
+          <div class="status-pill" id="statusPill">Disconnected</div>
+        </section>
+
+        <section class="auth-card">
+          <form id="loginForm" class="auth-form">
+            <div class="field-group">
+              <label for="username">Username</label>
+              <input id="username" name="username" type="text" value="demo" autocomplete="username" />
+            </div>
+            <div class="field-group">
+              <label for="password">Password</label>
+              <input id="password" name="password" type="password" value="demo12345" autocomplete="current-password" />
+            </div>
+            <button id="loginButton" type="submit">Sign In</button>
+          </form>
+          <div class="auth-meta">
+            <span id="authState">Use the default demo account or replace it in `.env`.</span>
+          </div>
+        </section>
+
+        <section class="chat-card">
+          <div id="messages" class="messages"></div>
+          <form id="chatForm" class="composer">
+            <textarea
+              id="messageInput"
+              rows="4"
+              placeholder="Ask about HDB eligibility, grants, resale, rental, HFE, or renovation rules."
+            ></textarea>
+            <div class="composer-actions">
+              <p class="helper-text">
+                Try: "Who is eligible to buy a BTO flat as a family?" or "What is the HFE letter?"
+              </p>
+              <button id="sendButton" type="submit">Send</button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

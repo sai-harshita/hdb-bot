@@ -15,3 +15,4 @@ garak_runs/
 ragas_results/
 agent/.python_packages/
 agent/local.settings.json
+.host_ingest_venv/

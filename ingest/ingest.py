@@ -1,4 +1,5 @@
 import os
+import tempfile
 import uuid
 
 import httpx
@@ -12,21 +13,37 @@ OLLAMA = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://qdrant:6333")
 COLLECTION = os.getenv("QDRANT_COLLECTION", "hdb_docs")
+REQUEST_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/137.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-SG,en;q=0.9",
+    "Referer": "https://www.google.com/",
+    "Cache-Control": "no-cache",
+}
 
 splitter = RecursiveCharacterTextSplitter(chunk_size=900, chunk_overlap=120)
 qdrant = QdrantClient(url=QDRANT_URL)
 
 
 def fetch_text(url: str) -> str:
-    r = httpx.get(url, timeout=60, follow_redirects=True,
-                  headers={"User-Agent": "hdb-bot-ingest/1.0"})
+    r = httpx.get(url, timeout=60, follow_redirects=True, headers=REQUEST_HEADERS)
     r.raise_for_status()
     if url.lower().endswith(".pdf") or "application/pdf" in r.headers.get("content-type", ""):
-        path = f"/tmp/{uuid.uuid4().hex}.pdf"
-        with open(path, "wb") as f:
-            f.write(r.content)
-        reader = PdfReader(path)
-        return "\n".join((p.extract_text() or "") for p in reader.pages)
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+            handle.write(r.content)
+            path = handle.name
+        try:
+            reader = PdfReader(path)
+            return "\n".join((p.extract_text() or "") for p in reader.pages)
+        finally:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
     soup = BeautifulSoup(r.text, "html.parser")
     for tag in soup(["script", "style", "nav", "footer", "header"]):
         tag.decompose()

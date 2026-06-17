@@ -1,5 +1,15 @@
 # HDB Assistant: End-to-End Guardrailed RAG Chatbot (Vibe Coding Spec)
 
+> Working repo note
+>
+> Use `HDB_Chatbot_Implementation_Guide.md` as the source of truth for the current running implementation in this repository.
+>
+> This spec remains the original build blueprint, but the working repo differs in a few practical places:
+>
+> - HDB HTML ingest is run reliably from the Windows host, not from the Dockerized ingest container.
+> - The MCP server now runs over `SSE` at `/mcp/sse`, not `streamable-http`.
+> - The stable API path through NGINX is `/api/...`.
+
 This is the single source of truth for the project. It is written so you can paste it into Cursor (or Claude Code / Codex) as context and build the whole thing one file at a time. Every file you need is in here with full code.
 
 Project codename: `hdb-bot`

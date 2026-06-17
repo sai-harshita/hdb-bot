@@ -36,6 +36,7 @@ Use `Cursor` as the primary editor and chat surface for step-by-step vibe coding
 ## Repo Deliverables
 
 - [HDB_Chatbot_VibeCoding_Spec.md](./HDB_Chatbot_VibeCoding_Spec.md)
+- [HDB_Chatbot_Implementation_Guide.md](./HDB_Chatbot_Implementation_Guide.md)
 - [HDB_Chatbot_Walkthrough.docx](./HDB_Chatbot_Walkthrough.docx)
 - [docker-compose.yml](./docker-compose.yml)
 
@@ -51,10 +52,16 @@ docker compose exec ollama ollama pull qwen2.5:3b
 docker compose exec ollama ollama pull nomic-embed-text
 ```
 
-4. Ingest official HDB sources:
+4. Ingest official HDB sources.
+
+Use the host-side ingest path on Windows. HDB blocks many HTML fetches from the Dockerized crawler, but the same requests succeed from the host with browser-like headers.
 
 ```powershell
-docker compose run --rm ingest
+python -m venv .host_ingest_venv
+.host_ingest_venv\Scripts\pip install httpx==0.28.1 beautifulsoup4==4.12.3 pypdf==5.1.0 qdrant-client==1.12.1 langchain-text-splitters==0.3.4
+$env:OLLAMA_BASE_URL = "http://localhost:11434"
+$env:QDRANT_URL = "http://localhost:6333"
+.host_ingest_venv\Scripts\python ingest\ingest.py
 ```
 
 5. Start the full stack:
@@ -66,16 +73,23 @@ docker compose up -d --build
 6. Get a token and test:
 
 ```powershell
-$token = (Invoke-RestMethod -Method Post -Uri http://localhost/auth/token -Body @{
+$token = (Invoke-RestMethod -Method Post -Uri http://localhost/api/auth/token -Body @{
   username = "demo"
   password = "demo12345"
 }).access_token
 
-Invoke-RestMethod -Method Post -Uri http://localhost/chat `
+Invoke-RestMethod -Method Post -Uri http://localhost/api/chat `
   -Headers @{ Authorization = "Bearer $token" } `
   -ContentType "application/json" `
   -Body '{"message":"Who is eligible to buy an HDB flat as a family?"}'
 ```
+
+Useful endpoints after startup:
+
+- Frontend: `http://localhost`
+- API docs: `http://localhost/docs`
+- Grafana: `http://localhost/grafana/`
+- MCP SSE: `http://localhost/mcp/sse`
 
 ## Production-Style POC Notes
 
@@ -108,4 +122,4 @@ gh repo create sai-harshita/hdb-bot --public --source . --remote origin --push
 2. Run the ingest pipeline and verify data in Qdrant.
 3. Bring the app up and test `/auth/token`, `/chat`, and `/docs`.
 4. Add the Azure Function URL only after the agent is deployed.
-5. Use the spec and walkthrough artifacts as the implementation guide.
+5. Use `HDB_Chatbot_Implementation_Guide.md` for the working runbook and keep the original spec as the build blueprint.
