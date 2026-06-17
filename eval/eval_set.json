@@ -1,0 +1,8 @@
+[
+  {"question": "Who is eligible to buy a BTO flat as a family?",
+   "ground_truth": "Singapore citizen families that meet the income ceiling and form an eligible family nucleus."},
+  {"question": "What grants are available for first-time HDB buyers?",
+   "ground_truth": "Grants such as the Enhanced CPF Housing Grant, subject to income and citizenship conditions."},
+  {"question": "Can a single person buy an HDB flat?",
+   "ground_truth": "Singles can buy under specific schemes once they meet the minimum age and citizenship rules."}
+]

@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check app ingest mcp || true
+
+      - name: Compile Python sources
+        run: python -m compileall app ingest mcp agent
+
+      - name: Validate Docker Compose
+        run: docker compose config -q
+
+      - name: Trivy filesystem scan (deps and config)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+  build:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -t hdb-chatbot-api ./app
+      - name: Build MCP image
+        run: docker build -t hdb-mcp ./mcp
+      - name: Build ingest image
+        run: docker build -t hdb-ingest ./ingest
+      - name: Trivy image scan (API)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: hdb-chatbot-api
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true

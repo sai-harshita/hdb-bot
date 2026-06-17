@@ -1,0 +1,51 @@
+define user ask off topic
+  "what do you think about politics"
+  "write me a poem"
+  "help me with my homework"
+  "tell me a joke"
+  "what is the weather"
+  "who will win the election"
+
+define bot refuse off topic
+  "I can only help with Singapore HDB topics such as BTO and resale flats, eligibility, grants, loans, rentals, and HDB services. Please ask an HDB question."
+
+define flow hdb topic safety
+  user ask off topic
+  bot refuse off topic
+  stop
+
+# These flows simply attach the named checks declared in config.yml.
+define flow self check input
+  $allowed = execute self_check_input
+  if not $allowed
+    bot refuse to respond
+    stop
+
+define flow self check output
+  $allowed = execute self_check_output
+  if not $allowed
+    bot refuse to respond
+    stop
+
+define flow check jailbreak
+  $jb = execute check_jailbreak(text=$user_message)
+  if $jb
+    bot refuse to respond
+    stop
+
+define flow mask pii input
+  $user_message = execute mask_pii(text=$user_message)
+
+define flow mask pii output
+  $bot_message = execute mask_pii(text=$bot_message)
+
+define flow self check facts
+  $grounded = execute self_check_facts
+  if not $grounded
+    bot inform answer unverified
+
+define bot refuse to respond
+  "I am sorry, but I cannot help with that request."
+
+define bot inform answer unverified
+  "I could not fully verify this against official HDB sources, so please confirm on hdb.gov.sg before relying on it."

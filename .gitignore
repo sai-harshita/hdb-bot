@@ -1,0 +1,17 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+data/
+qdrant_storage/
+pgdata/
+.ollama/
+*.log
+.DS_Store
+.cursor/
+node_modules/
+garak_runs/
+ragas_results/
+agent/.python_packages/
+agent/local.settings.json

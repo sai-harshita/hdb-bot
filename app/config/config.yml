@@ -1,0 +1,37 @@
+models:
+  - type: main
+    engine: ollama
+    model: qwen2.5:3b
+    parameters:
+      base_url: http://ollama:11434
+      temperature: 0.1
+
+# Fallback if the ollama engine errors in your NeMo version: use the
+# OpenAI-compatible endpoint instead (Ollama exposes /v1). To use it,
+# comment the block above and uncomment below, and set env
+# OPENAI_API_KEY=ollama  OPENAI_API_BASE=http://ollama:11434/v1
+#
+# models:
+#   - type: main
+#     engine: openai
+#     model: qwen2.5:3b
+
+rails:
+  input:
+    flows:
+      - self check input
+      - check jailbreak
+      - mask pii input
+      - hdb topic safety
+  output:
+    flows:
+      - self check output
+      - self check facts
+      - mask pii output
+
+  dialog:
+    single_call:
+      enabled: false
+
+# Lower the bar for retrieval-grounded answers; we feed relevant_chunks ourselves
+prompts_path: prompts.yml

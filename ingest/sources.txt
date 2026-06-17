@@ -1,0 +1,21 @@
+# Seed this list with official HDB pages and PDFs only.
+# These URLs were selected to cover the core end-user assistant topics:
+# eligibility, grants, HFE, resale, rental, and home-management guidance.
+
+https://www.hdb.gov.sg/
+https://www.hdb.gov.sg/buying-a-flat/flat-grant-and-loan-eligibility
+https://www.hdb.gov.sg/buying-a-flat/flat-grant-and-loan-eligibility/application-for-an-hdb-flat-eligibility-hfe-letter
+https://www.hdb.gov.sg/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families
+https://www.hdb.gov.sg/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families/enhanced-cpf-housing-grant
+https://www.hdb.gov.sg/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families/cpf-housing-grants
+https://www.hdb.gov.sg/buying-a-flat/flat-grant-and-loan-eligibility/singles
+https://www.hdb.gov.sg/buying-a-flat/flat-grant-and-loan-eligibility/singles/enhanced-cpf-housing-grant
+https://www.hdb.gov.sg/buying-a-flat/resale-flats/process-for-buying-a-resale-flat
+https://www.hdb.gov.sg/buying-a-flat/resale-flats/finding-a-resale-flat
+https://www.hdb.gov.sg/renting-a-flat
+https://www.hdb.gov.sg/renting-a-flat/public-rental-scheme/eligibility
+https://www.hdb.gov.sg/renting-a-flat/renting-from-open-market/eligibility
+https://www.hdb.gov.sg/managing-my-home/home-ownership/renting-out-a-flat-or-bedrooms/renting-out-a-flat
+https://www.hdb.gov.sg/managing-my-home/renovation-and-maintenance/renovation/renovation-guidelines/building-works
+https://services-homes.hdb.gov.sg/sales/files/general_conditions_for_purchase.pdf
+https://www.hdb.gov.sg/hdb-pulse/reports/annual-reports-and-financial-statements
