@@ -7,51 +7,105 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <div class="page-shell">
-      <aside class="info-panel">
-        <div class="brand-mark">HDB</div>
-        <p class="eyebrow">Singapore public-housing assistant</p>
-        <h1>Guardrailed answers over official HDB sources.</h1>
-        <p class="lead">
-          Local RAG, NeMo Guardrails, JWT auth, MCP tools, OpenTelemetry, Qdrant, Postgres, and NGINX.
-        </p>
-        <div class="badges">
-          <span>NeMo Guardrails</span>
-          <span>Qdrant</span>
-          <span>FastAPI</span>
-          <span>MCP</span>
-          <span>Grafana</span>
-        </div>
-        <div class="topic-card">
-          <div class="topic-card-header">
-            <h2>Supported topics</h2>
-            <button id="refreshTopics" type="button">Refresh</button>
+      <aside class="sidebar">
+        <section class="panel hero-card">
+          <div class="brand-row">
+            <div class="brand-mark">HDB</div>
+            <div>
+              <p class="eyebrow">Singapore public-housing assistant</p>
+              <p class="brand-copy">Production-style local RAG demo</p>
+            </div>
+          </div>
+          <h1>Official HDB answers, guarded in real time.</h1>
+          <p class="hero-copy">
+            FastAPI, Qdrant, Ollama, NeMo-configured guardrails, JWT auth, MCP, and full observability behind
+            NGINX.
+          </p>
+          <div class="hero-stats">
+            <article class="stat-card">
+              <span class="stat-label">Mode</span>
+              <strong>Local + Docker</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Coverage</span>
+              <strong id="topicCount">0 topics</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Guardrails</span>
+              <strong>Input, output, grounding</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel topics-card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Knowledge scope</p>
+              <h2>Supported topics</h2>
+            </div>
+            <button id="refreshTopics" type="button" class="ghost-button">Refresh</button>
           </div>
           <ul id="topicsList" class="topics-list"></ul>
-        </div>
-        <div class="ops-links">
-          <a href="/docs" target="_blank" rel="noreferrer">API Docs</a>
-          <a href="/grafana/" target="_blank" rel="noreferrer">Grafana</a>
-          <a href="/mcp/sse" target="_blank" rel="noreferrer">MCP Endpoint</a>
-        </div>
+        </section>
+
+        <section class="panel prompt-card">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Start here</p>
+              <h2>Quick prompts</h2>
+            </div>
+          </div>
+          <div class="prompt-grid">
+            <button class="prompt-chip" type="button" data-prompt="What is the HFE letter?">What is the HFE letter?</button>
+            <button class="prompt-chip" type="button" data-prompt="Who is eligible to buy a flat as a family?">Family eligibility</button>
+            <button class="prompt-chip" type="button" data-prompt="How do I buy a resale flat?">Resale process</button>
+            <button class="prompt-chip" type="button" data-prompt="What are HDB renovation rules?">Renovation rules</button>
+            <button class="prompt-chip" type="button" data-prompt="Can singles buy an HDB flat?">Singles eligibility</button>
+            <button class="prompt-chip" type="button" data-prompt="What priority schemes are available for BTO applications?">Priority schemes</button>
+          </div>
+        </section>
+
+        <section class="panel links-card">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Operations</p>
+              <h2>Live endpoints</h2>
+            </div>
+          </div>
+          <div class="ops-links">
+            <a href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+            <a href="/grafana/" target="_blank" rel="noreferrer">Grafana</a>
+            <a href="/mcp/sse" target="_blank" rel="noreferrer">MCP SSE</a>
+          </div>
+        </section>
       </aside>
 
-      <main class="chat-panel">
-        <section class="session-strip">
+      <main class="workspace">
+        <section class="panel workspace-banner">
           <div>
-            <p class="eyebrow">Live session</p>
-            <h2>Operator Console</h2>
+            <p class="eyebrow">Operator console</p>
+            <h2>Live chatbot session</h2>
+            <p class="banner-copy">Ask a fresh HDB question, inspect the sources, and verify the guardrail behavior.</p>
           </div>
           <div class="status-pill" id="statusPill">Disconnected</div>
         </section>
 
-        <section class="auth-card">
+        <section class="panel auth-card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Authentication</p>
+              <h2>Session control</h2>
+            </div>
+            <p id="authState" class="auth-state">Use the default demo account or replace it in <code>.env</code>.</p>
+          </div>
+
           <form id="loginForm" class="auth-form">
             <div class="field-group">
               <label for="username">Username</label>
@@ -61,26 +115,42 @@
               <label for="password">Password</label>
               <input id="password" name="password" type="password" value="demo12345" autocomplete="current-password" />
             </div>
-            <button id="loginButton" type="submit">Sign In</button>
+            <div class="auth-actions">
+              <button id="loginButton" type="submit" class="primary-button">Sign In</button>
+              <button id="loadHistoryButton" type="button" class="ghost-button">Load recent history</button>
+              <button id="clearViewButton" type="button" class="ghost-button">Clear transcript</button>
+            </div>
           </form>
-          <div class="auth-meta">
-            <span id="authState">Use the default demo account or replace it in `.env`.</span>
-          </div>
         </section>
 
-        <section class="chat-card">
+        <section class="panel chat-card">
+          <div class="chat-header">
+            <div>
+              <p class="eyebrow">Conversation</p>
+              <h2>Answer stream</h2>
+            </div>
+            <div class="hint-stack">
+              <span class="mini-chip">Official HDB sources</span>
+              <span class="mini-chip">JWT protected</span>
+              <span class="mini-chip">Guardrails active</span>
+            </div>
+          </div>
+
           <div id="messages" class="messages"></div>
+
           <form id="chatForm" class="composer">
+            <label for="messageInput" class="sr-only">Ask the HDB assistant</label>
             <textarea
               id="messageInput"
               rows="4"
-              placeholder="Ask about HDB eligibility, grants, resale, rental, HFE, or renovation rules."
+              placeholder="Ask about HDB eligibility, HFE, grants, resale, rental, or renovation rules."
             ></textarea>
-            <div class="composer-actions">
-              <p class="helper-text">
-                Try: "Who is eligible to buy a BTO flat as a family?" or "What is the HFE letter?"
-              </p>
-              <button id="sendButton" type="submit">Send</button>
+            <div class="composer-footer">
+              <div>
+                <p class="helper-text">Ask a fresh HDB question or use one of the quick prompts.</p>
+                <p class="sub-helper">This demo returns answers from official HDB pages and shows the source links used.</p>
+              </div>
+              <button id="sendButton" type="submit" class="primary-button">Ask HDB Assistant</button>
             </div>
           </form>
         </section>

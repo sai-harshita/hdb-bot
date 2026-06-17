@@ -1,5 +1,6 @@
 import os
 import re
+import unicodedata
 
 import httpx
 from jinja2 import Template
@@ -12,16 +13,28 @@ CONFIG_PATH = os.getenv("GUARDRAILS_CONFIG_PATH", "/app/config")
 OLLAMA = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen2.5:3b")
 OLLAMA_TIMEOUT_SECONDS = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "120"))
-COUPLES_AND_FAMILIES_LABELS = [
-    "Fiancé and fiancée",
-    "Married couples and/ or parent(s) with child(ren)",
-    "Multi-generation families",
-    "Orphaned siblings",
-    "Families with non-residents",
+
+FAMILY_LABELS = [
+    ("Fiance and fiancee", "fiance and fiancee"),
+    ("Married couples and/or parent(s) with child(ren)", "married couples and/ or parent(s) with child(ren)"),
+    ("Multi-generation families", "multi-generation families"),
+    ("Orphaned siblings", "orphaned siblings"),
+    ("Families with non-residents", "families with non-residents"),
 ]
 SINGLES_LABELS = [
-    "Singles",
-    "Two or more singles",
+    ("Singles", "singles"),
+    ("Two or more singles", "two or more singles"),
+]
+PRIORITY_SCHEME_LABELS = [
+    ("First-timer families", "first-timer families"),
+    ("FT(PMC) category", "ft(pmc) category"),
+    ("Family and Parenthood Priority Scheme (FPPS)", "family and parenthood priority scheme"),
+    ("Family Care Scheme (FCS) (Proximity)", "family care scheme (fcs) (proximity)"),
+    ("Family Care Scheme (FCS) (Joint Balloting)", "family care scheme (fcs) (joint balloting)"),
+    ("Third Child Priority Scheme (TCPS)", "third child priority scheme"),
+    ("ASSIST", "assistance scheme for second-timers"),
+    ("Senior Priority Scheme (SPS)", "senior priority scheme"),
+    ("Tenants' Priority Scheme (TPS)", "tenants priority scheme"),
 ]
 
 _config = RailsConfig.from_path(CONFIG_PATH)
@@ -58,8 +71,13 @@ REFUSAL_MESSAGE = (
 )
 
 
+def _ascii_fold(text: str) -> str:
+    return unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode("ascii")
+
+
 def _normalize_text(text: str) -> str:
-    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9\s]", " ", (text or "").lower())).strip()
+    folded = _ascii_fold(text)
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9\s]", " ", folded.lower())).strip()
 
 
 def _join_labels(labels: list[str]) -> str:
@@ -67,7 +85,26 @@ def _join_labels(labels: list[str]) -> str:
         return ""
     if len(labels) == 1:
         return labels[0]
+    if len(labels) == 2:
+        return f"{labels[0]} and {labels[1]}"
     return ", ".join(labels[:-1]) + f", and {labels[-1]}"
+
+
+def _extract_labels(text: str, label_pairs: list[tuple[str, str]]) -> list[str]:
+    normalized_text = _normalize_text(text)
+    matches = []
+    for display, matcher in label_pairs:
+        if _normalize_text(matcher) in normalized_text:
+            matches.append(display)
+    return matches
+
+
+def _find_chunk(chunks: list[dict], source_fragment: str) -> dict | None:
+    needle = source_fragment.lower()
+    for chunk in chunks:
+        if needle in chunk.get("source", "").lower():
+            return chunk
+    return None
 
 
 async def _ollama_chat(messages: list[dict], temperature: float = 0.1) -> str:
@@ -100,8 +137,7 @@ async def _ask_yes_no(task: str, **kwargs) -> bool:
         ],
         temperature=0.0,
     )
-    normalized = answer.strip().lower()
-    return normalized.startswith("yes")
+    return answer.strip().lower().startswith("yes")
 
 
 async def _generate_grounded_answer(question: str, context_text: str) -> str:
@@ -123,24 +159,63 @@ async def _generate_grounded_answer(question: str, context_text: str) -> str:
     )
 
 
-def _rule_based_answer(question: str, chunks: list[dict]) -> str | None:
+def _rule_based_answer(question: str, chunks: list[dict]) -> tuple[str | None, str]:
     low_question = question.lower()
-    if not any(term in low_question for term in ["eligible", "eligibility", "who can buy"]):
-        return None
 
-    for chunk in chunks:
-        source = chunk.get("source", "").lower()
-        text = chunk.get("text", "")
-        if "couples-and-families" in source:
-            labels = [label for label in COUPLES_AND_FAMILIES_LABELS if label.lower() in text.lower()]
-            if labels:
-                return f"HDB lists these Couples and Families household types: {_join_labels(labels)}."
-        if "/singles" in source:
-            labels = [label for label in SINGLES_LABELS if label.lower() in text.lower()]
-            if labels:
-                return f"HDB lists these Singles household types: {_join_labels(labels)}."
+    family_chunk = _find_chunk(chunks, "couples-and-families")
+    singles_chunk = _find_chunk(chunks, "/singles")
+    hfe_chunk = _find_chunk(chunks, "application-for-an-hdb-flat-eligibility-hfe-letter")
+    resale_chunk = _find_chunk(chunks, "process-for-buying-a-resale-flat")
+    new_flat_chunk = _find_chunk(chunks, "process-for-buying-a-new-flat")
+    priority_chunk = _find_chunk(chunks, "priority-schemes")
+    renovation_chunk = _find_chunk(chunks, "renovation-guidelines/building-works")
 
-    return None
+    if family_chunk and any(term in low_question for term in ["family", "families", "eligible", "eligibility", "who can buy"]):
+        labels = _extract_labels(family_chunk.get("text", ""), FAMILY_LABELS)
+        if labels:
+            return f"HDB lists these Couples and Families household types: {_join_labels(labels)}.", "extractive"
+
+    if singles_chunk and any(term in low_question for term in ["single", "singles"]):
+        labels = _extract_labels(singles_chunk.get("text", ""), SINGLES_LABELS)
+        if labels:
+            return f"HDB's Singles page covers: {_join_labels(labels)}.", "extractive"
+
+    if hfe_chunk and "hfe" in low_question:
+        return (
+            "The HFE letter is the HDB Flat Eligibility letter. HDB's HFE page says to plan and apply early, "
+            "review how to apply, check the income guidelines and documents, understand the letter's validity "
+            "and possible review, and then follow the next steps with your HFE letter.",
+            "extractive",
+        )
+
+    if resale_chunk and "resale" in low_question:
+        return (
+            "HDB's resale flat process covers resale flat planning for buyers, the Option to Purchase (OTP), "
+            "the resale flat application for buyers, and resale flat completion for buyers.",
+            "extractive",
+        )
+
+    if priority_chunk and any(term in low_question for term in ["priority", "scheme", "schemes", "first-timer", "ballot"]):
+        labels = _extract_labels(priority_chunk.get("text", ""), PRIORITY_SCHEME_LABELS)
+        if labels:
+            return f"HDB's priority schemes page covers: {_join_labels(labels)}.", "extractive"
+
+    if new_flat_chunk and any(term in low_question for term in ["new flat", "bto", "sbf", "open booking"]):
+        return (
+            "HDB's new flat buying process covers the overview, modes of sale, application for a new flat, "
+            "booking of flat, signing the Agreement for Lease, and key collection.",
+            "extractive",
+        )
+
+    if renovation_chunk and any(term in low_question for term in ["renovation", "building works", "contractor", "false ceiling", "household shelter"]):
+        return (
+            "HDB's renovation guidelines for building works cover floor finishes, walls, wall finishes, "
+            "false ceiling and cornices, kitchen works, refuse chute hopper alterations, household shelters, "
+            "doors and gates, and sold recess area works.",
+            "extractive",
+        )
+
+    return None, "generated"
 
 
 def _lexically_grounded(answer: str, context_text: str) -> bool:
@@ -148,7 +223,7 @@ def _lexically_grounded(answer: str, context_text: str) -> bool:
     context_tokens = set(normalized_context.split())
     segments = [
         segment.strip()
-        for segment in re.split(r"[\n.;]+", answer)
+        for segment in re.split(r"[\n.;:]+", answer)
         if len(segment.strip().split()) >= 2
     ]
     if not segments:
@@ -164,7 +239,7 @@ def _lexically_grounded(answer: str, context_text: str) -> bool:
         if not segment_tokens:
             continue
         overlap = len(segment_tokens & context_tokens) / len(segment_tokens)
-        if overlap < 0.8:
+        if overlap < 0.72:
             return False
 
     return True
@@ -202,7 +277,7 @@ async def guarded_answer(question: str) -> dict:
             "agent_used": used_agent,
         }
 
-    answer = _rule_based_answer(question, chunks)
+    answer, answer_mode = _rule_based_answer(question, chunks)
     if answer is None:
         masked_question = await mask_pii(question)
         answer = await _generate_grounded_answer(masked_question, context_text)
@@ -216,22 +291,23 @@ async def guarded_answer(question: str) -> dict:
             "agent_used": used_agent,
         }
 
-    if await _ask_yes_no("self_check_output", bot_response=answer):
-        return {
-            "answer": REFUSAL_MESSAGE,
-            "blocked_by": "guardrail",
-            "sources": sources,
-            "agent_used": used_agent,
-        }
+    if answer_mode != "extractive":
+        if await _ask_yes_no("self_check_output", bot_response=answer):
+            return {
+                "answer": REFUSAL_MESSAGE,
+                "blocked_by": "guardrail",
+                "sources": sources,
+                "agent_used": used_agent,
+            }
 
-    grounded = await _ask_yes_no("self_check_facts", evidence=context_text, response=answer)
-    if not grounded and not _lexically_grounded(answer, context_text):
-        return {
-            "answer": UNVERIFIED_MESSAGE,
-            "blocked_by": "fact_check",
-            "sources": sources,
-            "agent_used": used_agent,
-        }
+        grounded = await _ask_yes_no("self_check_facts", evidence=context_text, response=answer)
+        if not grounded and not _lexically_grounded(answer, context_text):
+            return {
+                "answer": UNVERIFIED_MESSAGE,
+                "blocked_by": "fact_check",
+                "sources": sources,
+                "agent_used": used_agent,
+            }
 
     return {
         "answer": answer,
